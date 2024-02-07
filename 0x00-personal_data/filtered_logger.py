@@ -4,22 +4,27 @@ Module for filtered logger.
 """
 
 import logging
+import os
+import mysql.connector
+from typing import List, Tuple
 import re
-from typing import List
+
+# Define the PII fields
+PII_FIELDS: Tuple[str, str, str, str, str] = (
+    "name", "email", "phone", "ssn", "password")
 
 
 class RedactingFormatter(logging.Formatter):
     """Redacting Formatter class"""
 
-    FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
-    SEPARATOR = ";"
+    FORMAT = "[HOLBERTON] user_data INFO %(asctime)-15s: %(message)s"
 
-    def __init__(self, fields: List[str]):
+    def __init__(self, fields: Tuple[str, ...]):
         """
         Initialize RedactingFormatter with fields to redact.
 
         Args:
-            fields (List[str]): List of fields to redact.
+            fields (Tuple[str, ...]): Tuple of fields to redact.
         """
         super().__init__(self.FORMAT)
         self.fields = fields
@@ -34,10 +39,61 @@ class RedactingFormatter(logging.Formatter):
         Returns:
             str: Formatted log message with specified fields redacted.
         """
-        message = super().format(record)
-        redacted_message = filter_datum(
-            self.fields, "***", message, self.SEPARATOR)
-        return redacted_message
+        message = record.msg
+        for field in self.fields:
+            message = message.replace(field, "***")
+        return super().format(logging.LogRecord(
+            name=record.name,
+            level=record.levelno,
+            pathname=record.pathname,
+            lineno=record.lineno,
+            msg=message,
+            args=record.args,
+            exc_info=record.exc_info,
+            func=record.funcName,
+            sinfo=record.stack_info,
+        ))
+
+
+def get_logger() -> logging.Logger:
+    """
+    Create and configure a logger named "user_data".
+
+    Returns:
+        logging.Logger: Configured logger object.
+    """
+    logger = logging.getLogger("user_data")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+    # Create StreamHandler with RedactingFormatter
+    stream_handler = logging.StreamHandler()
+    formatter = RedactingFormatter(PII_FIELDS)
+    stream_handler.setFormatter(formatter)
+
+    logger.addHandler(stream_handler)
+
+    return logger
+
+
+def get_db() -> mysql.connector.connection.MySQLConnection:
+    """
+    Create a connection to the database.
+
+    Returns:
+        mysql.connector.connection.MySQLConnection: Database connection object.
+    """
+    username = os.getenv("PERSONAL_DATA_DB_USERNAME", "root")
+    password = os.getenv("PERSONAL_DATA_DB_PASSWORD", "")
+    host = os.getenv("PERSONAL_DATA_DB_HOST", "localhost")
+    database = os.getenv("PERSONAL_DATA_DB_NAME")
+
+    return mysql.connector.connect(
+        user=username,
+        password=password,
+        host=host,
+        database=database
+    )
 
 
 def filter_datum(
@@ -64,3 +120,25 @@ def filter_datum(
         r'\1={}'.format(redaction),
         message
     )
+
+
+def main() -> None:
+    """
+    Retrieve all rows from the "users" table in the database
+    and log each row under a filtered format.
+    """
+    logger = get_logger()
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM users;")
+    for row in cursor:
+        filtered_row = {
+            key: "***" if key in PII_FIELDS else value
+            for key, value in row.items()}
+        logger.info(filtered_row)
+    cursor.close()
+    db.close()
+
+
+if __name__ == "__main__":
+    main()
