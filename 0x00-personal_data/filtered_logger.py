@@ -89,10 +89,11 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
     database = os.getenv("PERSONAL_DATA_DB_NAME")
 
     return mysql.connector.connect(
-        user=username,
-        password=password,
-        host=host,
-        database=database
+        user=db_user,
+        port=3306,
+        password=db_pwd,
+        host=db_host,
+        database=db_name
     )
 
 
