@@ -14,6 +14,32 @@ PII_FIELDS: Tuple[str, str, str, str, str] = (
     "name", "email", "phone", "ssn", "password")
 
 
+def filter_datum(
+    fields: List[str],
+    redaction: str,
+    message: str,
+    separator: str
+) -> str:
+    """
+    Replace occurrences of specified fields in a log message with redaction.
+
+    Args:
+        fields (List[str]): List of fields to obfuscate.
+        redaction (str): String representing the redaction for the field.
+        message (str): Log line message.
+        separator (str): Character separating all fields in the log line.
+
+    Returns:
+        str: Log message with specified fields obfuscated.
+    """
+    regex_pattern = '|'.join(fields)
+    return re.sub(
+        r'({})=[^{}{}]*'.format(regex_pattern, separator, separator),
+        r'\1={}'.format(redaction),
+        message
+    )
+
+
 class RedactingFormatter(logging.Formatter):
     """Redacting Formatter class"""
 
@@ -28,7 +54,7 @@ class RedactingFormatter(logging.Formatter):
         """
         super(RedactingFormatter, self).__init__(self.FORMAT)
         self.fields = fields
-        
+
 
     def format(self, record: logging.LogRecord) -> str:
         """
@@ -85,32 +111,6 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
         host=db_host,
         database=db_name,
         port=3306
-    )
-
-
-def filter_datum(
-    fields: List[str],
-    redaction: str,
-    message: str,
-    separator: str
-) -> str:
-    """
-    Replace occurrences of specified fields in a log message with redaction.
-
-    Args:
-        fields (List[str]): List of fields to obfuscate.
-        redaction (str): String representing the redaction for the field.
-        message (str): Log line message.
-        separator (str): Character separating all fields in the log line.
-
-    Returns:
-        str: Log message with specified fields obfuscated.
-    """
-    regex_pattern = '|'.join(fields)
-    return re.sub(
-        r'({})=[^{}{}]*'.format(regex_pattern, separator, separator),
-        r'\1={}'.format(redaction),
-        message
     )
 
 
