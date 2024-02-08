@@ -17,12 +17,12 @@ PII_FIELDS: Tuple[str, str, str, str, str] = (
 class RedactingFormatter(logging.Formatter):
     """ Redacting Formatter class """
 
-    def __init__(self, fields):
+    def __init__(self, fields: List[str]):
         """
         Initialize RedactingFormatter with fields to redact.
 
         Args:
-            fields (tuple): Tuple of fields to redact.
+            fields (List[str]): List of fields to redact.
         """
         super().__init__(
             "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s")
@@ -40,7 +40,7 @@ class RedactingFormatter(logging.Formatter):
         """
         message = record.msg
         for field in self.fields:
-            message = re.sub(rf"{field}=[^;]+",
+            message = re.sub(rf"{field}=([^;]+)",
                              f"{field}={self.REDACTION}", message)
         return message
 
@@ -84,32 +84,6 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
         host=db_host,
         database=db_name,
         port=3306
-    )
-
-
-def filter_datum(
-    fields: List[str],
-    redaction: str,
-    message: str,
-    separator: str
-) -> str:
-    """
-    Replace occurrences of specified fields in a log message with redaction.
-
-    Args:
-        fields (List[str]): List of fields to obfuscate.
-        redaction (str): String representing the redaction for the field.
-        message (str): Log line message.
-        separator (str): Character separating all fields in the log line.
-
-    Returns:
-        str: Log message with specified fields obfuscated.
-    """
-    regex_pattern = '|'.join(fields)
-    return re.sub(
-        r'({})=[^{}{}]*'.format(regex_pattern, separator, separator),
-        r'\1={}'.format(redaction),
-        message
     )
 
 
