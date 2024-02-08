@@ -15,44 +15,28 @@ PII_FIELDS: Tuple[str, str, str, str, str] = (
 
 
 class RedactingFormatter(logging.Formatter):
-    """Redacting Formatter class"""
+    """ Redacting Formatter class """
 
-    FORMAT = "[HOLBERTON] user_data INFO %(asctime)-15s: %(message)s"
+    REDACTION = "***"
+    FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
+    SEPARATOR = ";"
 
-    def __init__(self, fields: Tuple[str, ...]):
-        """
-        Initialize RedactingFormatter with fields to redact.
-
-        Args:
-            fields (Tuple[str, ...]): Tuple of fields to redact.
-        """
+    def __init__(self, fields: List[str]):
         super().__init__(self.FORMAT)
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
-        """
-        Format the log record, redacting specified fields.
+        record.msg = self.filter_fields(record.msg)
+        return super().format(record)
 
-        Args:
-            record (logging.LogRecord): Log record to format.
-
-        Returns:
-            str: Formatted log message with specified fields redacted.
-        """
-        message = record.msg
-        for field in self.fields:
-            message = message.replace(field, "***")
-        return super().format(logging.LogRecord(
-            name=record.name,
-            level=record.levelno,
-            pathname=record.pathname,
-            lineno=record.lineno,
-            msg=message,
-            args=record.args,
-            exc_info=record.exc_info,
-            func=record.funcName,
-            sinfo=record.stack_info,
-        ))
+    def filter_fields(self, message: str) -> str:
+        regex_pattern = '|'.join(self.fields)
+        return re.sub(
+            r'({})=[^{}{}]*'.format(regex_pattern,
+                                    self.SEPARATOR, self.SEPARATOR),
+            r'\1={}'.format(self.REDACTION),
+            message
+        )
 
 
 def get_logger() -> logging.Logger:
