@@ -6,12 +6,32 @@ Module for filtered logger.
 import logging
 import os
 import mysql.connector
-from typing import List, Tuple
+from typing import List
 import re
 
-# Define the PII fields
-PII_FIELDS: Tuple[str, str, str, str, str] = (
-    "name", "email", "phone", "ssn", "password")
+
+def filter_datum(
+    fields: List[str],
+    redaction: str,
+    message: str,
+    separator: str
+) -> str:
+    """
+    Replace occurrences of specified fields in a log message with redaction.
+
+    Args:
+        fields (List[str]): List of fields to obfuscate.
+        redaction (str): String representing the redaction for the field.
+        message (str): Log line message.
+        separator (str): Character separating all fields in the log line.
+
+    Returns:
+        str: Log message with specified fields obfuscated.
+    """
+    for field in fields:
+        message = re.sub(field+'=.*?'+separator,
+                         field+'='+redaction+separator, message)
+    return message
 
 
 class RedactingFormatter(logging.Formatter):
@@ -74,31 +94,7 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
     )
 
 
-def filter_datum(
-    fields: List[str],
-    redaction: str,
-    message: str,
-    separator: str
-) -> str:
-    """
-    Replace occurrences of specified fields in a log message with redaction.
-
-    Args:
-        fields (List[str]): List of fields to obfuscate.
-        redaction (str): String representing the redaction for the field.
-        message (str): Log line message.
-        separator (str): Character separating all fields in the log line.
-
-    Returns:
-        str: Log message with specified fields obfuscated.
-    """
-    for field in fields:
-        message = re.sub(field+'=.*?'+separator,
-                         field+'='+redaction+separator, message)
-    return message
-
-
-def main() -> None:
+def main(PII_FIELDS: List[str]) -> None:
     """
     Retrieve all rows from the "users" table in the database
     and log each row under a filtered format.
@@ -117,4 +113,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    PII_FIELDS = ("name", "email", "phone", "ssn", "password")
+    main(PII_FIELDS)
