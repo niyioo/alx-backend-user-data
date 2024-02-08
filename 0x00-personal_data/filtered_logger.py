@@ -6,50 +6,43 @@ Module for filtered logger.
 import logging
 import os
 import mysql.connector
-from typing import List
+from typing import List, Tuple
 import re
 
-
-def filter_datum(
-    fields: List[str],
-    redaction: str,
-    message: str,
-    separator: str
-) -> str:
-    """
-    Replace occurrences of specified fields in a log message with redaction.
-
-    Args:
-        fields (List[str]): List of fields to obfuscate.
-        redaction (str): String representing the redaction for the field.
-        message (str): Log line message.
-        separator (str): Character separating all fields in the log line.
-
-    Returns:
-        str: Log message with specified fields obfuscated.
-    """
-    for field in fields:
-        message = re.sub(field+'=.*?'+separator,
-                         field+'='+redaction+separator, message)
-    return message
+# Define the PII fields
+PII_FIELDS: Tuple[str, str, str, str, str] = (
+    "name", "email", "phone", "ssn", "password")
 
 
 class RedactingFormatter(logging.Formatter):
     """ Redacting Formatter class """
 
-    REDACTION = "***"
-    FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
-    SEPARATOR = ";"
+    def __init__(self, fields):
+        """
+        Initialize RedactingFormatter with fields to redact.
 
-    def __init__(self, fields: List[str]):
-        super(RedactingFormatter, self).__init__(self.FORMAT)
+        Args:
+            fields (tuple): Tuple of fields to redact.
+        """
+        super().__init__(
+            "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s")
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
-        message = super(RedactingFormatter, self).format(record)
-        redacted = filter_datum(self.fields, self.REDACTION,
-                                message, self.SEPARATOR)
-        return redacted
+        """
+        Format the log record, redacting specified fields.
+
+        Args:
+            record (logging.LogRecord): Log record to format.
+
+        Returns:
+            str: Formatted log message with specified fields redacted.
+        """
+        message = record.msg
+        for field in self.fields:
+            message = re.sub(rf"{field}=[^;]+",
+                             f"{field}={self.REDACTION}", message)
+        return message
 
 
 def get_logger() -> logging.Logger:
@@ -94,7 +87,33 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
     )
 
 
-def main(PII_FIELDS: List[str]) -> None:
+def filter_datum(
+    fields: List[str],
+    redaction: str,
+    message: str,
+    separator: str
+) -> str:
+    """
+    Replace occurrences of specified fields in a log message with redaction.
+
+    Args:
+        fields (List[str]): List of fields to obfuscate.
+        redaction (str): String representing the redaction for the field.
+        message (str): Log line message.
+        separator (str): Character separating all fields in the log line.
+
+    Returns:
+        str: Log message with specified fields obfuscated.
+    """
+    regex_pattern = '|'.join(fields)
+    return re.sub(
+        r'({})=[^{}{}]*'.format(regex_pattern, separator, separator),
+        r'\1={}'.format(redaction),
+        message
+    )
+
+
+def main() -> None:
     """
     Retrieve all rows from the "users" table in the database
     and log each row under a filtered format.
@@ -113,5 +132,4 @@ def main(PII_FIELDS: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    PII_FIELDS = ("name", "email", "phone", "ssn", "password")
-    main(PII_FIELDS)
+    main()
