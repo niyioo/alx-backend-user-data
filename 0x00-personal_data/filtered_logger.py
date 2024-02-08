@@ -15,16 +15,18 @@ PII_FIELDS: Tuple[str, str, str, str, str] = (
 
 
 class RedactingFormatter(logging.Formatter):
-    """ Redacting Formatter class """
+    """Redacting Formatter class"""
 
-    def __init__(self, fields: List[str]):
+    FORMAT = "[HOLBERTON] user_data INFO %(asctime)-15s: %(message)s"
+
+    def __init__(self, fields: Tuple[str, ...]):
         """
         Initialize RedactingFormatter with fields to redact.
 
         Args:
-            fields (List[str]): List of fields to redact.
+            fields (Tuple[str, ...]): Tuple of fields to redact.
         """
-        super().__init__("[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s")
+        super().__init__(self.FORMAT)
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
@@ -39,8 +41,18 @@ class RedactingFormatter(logging.Formatter):
         """
         message = record.msg
         for field in self.fields:
-            message = re.sub(rf"{field}=([^;]+)", f"{field}={self.REDACTION}", message)
-        return message
+            message = message.replace(field, "***")
+        return super().format(logging.LogRecord(
+            name=record.name,
+            level=record.levelno,
+            pathname=record.pathname,
+            lineno=record.lineno,
+            msg=message,
+            args=record.args,
+            exc_info=record.exc_info,
+            func=record.funcName,
+            sinfo=record.stack_info,
+        ))
 
 
 def get_logger() -> logging.Logger:
@@ -82,6 +94,32 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
         host=db_host,
         database=db_name,
         port=3306
+    )
+
+
+def filter_datum(
+    fields: List[str],
+    redaction: str,
+    message: str,
+    separator: str
+) -> str:
+    """
+    Replace occurrences of specified fields in a log message with redaction.
+
+    Args:
+        fields (List[str]): List of fields to obfuscate.
+        redaction (str): String representing the redaction for the field.
+        message (str): Log line message.
+        separator (str): Character separating all fields in the log line.
+
+    Returns:
+        str: Log message with specified fields obfuscated.
+    """
+    regex_pattern = '|'.join(fields)
+    return re.sub(
+        r'({})=[^{}{}]*'.format(regex_pattern, separator, separator),
+        r'\1={}'.format(redaction),
+        message
     )
 
 
