@@ -26,8 +26,7 @@ class RedactingFormatter(logging.Formatter):
         Args:
             fields (Tuple[str, ...]): Tuple of fields to redact.
         """
-        super().__init__(self.FORMAT)
-        self.fields = fields
+        super(RedactingFormatter, self).__init__(self.FORMAT)
 
     def format(self, record: logging.LogRecord) -> str:
         """
