@@ -10,7 +10,7 @@ from typing import List
 import re
 
 # Define the PII fields
-PII_FIELDS = ("name", "email", "phone", "ssn", "password")
+PII_FIELDS = ('name', 'email', 'phone', 'ssn', 'password')
 
 
 def filter_datum(
@@ -31,14 +31,18 @@ def filter_datum(
     Returns:
         str: Log message with specified fields obfuscated.
     """
-    extract, replace = (patterns["extract"], patterns["replace"])
-    return re.sub(extract(fields, separator), replace(redaction), message)
+    for field in fields:
+        message = re.sub(field+'=.*?'+separator,
+                         field+'='+redaction+separator, message)
+    return message
 
 
 class RedactingFormatter(logging.Formatter):
     """Redacting Formatter class"""
 
-    FORMAT = "[HOLBERTON] user_data INFO %(asctime)-15s: %(message)s"
+    REDACTION = "***"
+    FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
+    SEPARATOR = ";"
 
     def __init__(self, fields: List[str]):
         """
@@ -95,18 +99,16 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
     Returns:
         mysql.connector.connection.MySQLConnection: Database connection object.
     """
-    db_user = os.getenv("PERSONAL_DATA_DB_USERNAME", "root")
-    db_pwd = os.getenv("PERSONAL_DATA_DB_PASSWORD", "")
-    db_host = os.getenv("PERSONAL_DATA_DB_HOST", "localhost")
-    db_name = os.getenv("PERSONAL_DATA_DB_NAME")
+    db_user = os.getenv('PERSONAL_DATA_DB_USERNAME') or "root"
+    db_pwd = os.getenv('PERSONAL_DATA_DB_PASSWORD') or ""
+    db_host = os.getenv('PERSONAL_DATA_DB_HOST') or "localhost"
+    db_name = os.getenv('PERSONAL_DATA_DB_NAME')
 
-    return mysql.connector.connect(
-        user=db_user,
-        password=db_pwd,
-        host=db_host,
-        database=db_name,
-        port=3306
-    )
+    connection = mysql.connector.connect(user=db_user,
+                                         password=db_pwd,
+                                         host=db_host,
+                                         database=db_name)
+    return connection
 
 
 def main() -> None:
@@ -116,7 +118,7 @@ def main() -> None:
     """
     logger = get_logger()
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM users;")
     for row in cursor:
         filtered_row = {
