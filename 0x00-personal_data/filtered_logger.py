@@ -10,8 +10,7 @@ from typing import List, Tuple
 import re
 
 # Define the PII fields
-PII_FIELDS: Tuple[str, str, str, str, str] = (
-    "name", "email", "phone", "ssn", "password")
+PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 
 def filter_datum(
