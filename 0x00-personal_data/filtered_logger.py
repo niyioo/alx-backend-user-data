@@ -31,28 +31,18 @@ class RedactingFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """
-        Format the log record, redacting specified fields.
+        Redact the message of LogRecord instance.
 
         Args:
-            record (logging.LogRecord): Log record to format.
-
+            record (logging.LogRecord): LogRecord instance containing message.
+        
         Returns:
-            str: Formatted log message with specified fields redacted.
+            str: Formatted and redacted log message.
         """
-        message = record.msg
-        for field in self.fields:
-            message = message.replace(field, "***")
-        return super().format(logging.LogRecord(
-            name=record.name,
-            level=record.levelno,
-            pathname=record.pathname,
-            lineno=record.lineno,
-            msg=message,
-            args=record.args,
-            exc_info=record.exc_info,
-            func=record.funcName,
-            sinfo=record.stack_info,
-        ))
+        message = super(RedactingFormatter, self).format(record)
+        redacted = filter_datum(self.fields, self.REDACTION,
+                                message, self.SEPARATOR)
+        return redacted
 
 
 def get_logger() -> logging.Logger:
