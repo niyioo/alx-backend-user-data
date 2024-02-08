@@ -6,7 +6,7 @@ Module for filtered logger.
 import logging
 import os
 import mysql.connector
-from typing import List, Tuple
+from typing import List
 import re
 
 # Define the PII fields
@@ -31,12 +31,8 @@ def filter_datum(
     Returns:
         str: Log message with specified fields obfuscated.
     """
-    regex_pattern = '|'.join(fields)
-    return re.sub(
-        r'({})=[^{}{}]*'.format(regex_pattern, separator, separator),
-        r'\1={}'.format(redaction),
-        message
-    )
+    extract, replace = (patterns["extract"], patterns["replace"])
+    return re.sub(extract(fields, separator), replace(redaction), message)
 
 
 class RedactingFormatter(logging.Formatter):
