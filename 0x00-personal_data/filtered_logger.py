@@ -54,7 +54,6 @@ class RedactingFormatter(logging.Formatter):
         super(RedactingFormatter, self).__init__(self.FORMAT)
         self.fields = fields
 
-
     def format(self, record: logging.LogRecord) -> str:
         """
         Redact the message of LogRecord instance.
