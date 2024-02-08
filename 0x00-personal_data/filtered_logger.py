@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
 """
-Definition of filter_datum function that returns an obfuscated log message
+Module for filtered logger.
 """
-from typing import List
-import re
+
 import logging
 import os
 import mysql.connector
+from typing import List
+import re
 
-
+# Define the PII fields
 PII_FIELDS = ('name', 'email', 'phone', 'ssn', 'password')
 
 
 def filter_datum(fields: List[str], redaction: str,
                  message: str, separator: str) -> str:
     """
-    Return an obfuscated log message
+    Replace occurrences of specified fields in a log message with redaction.
+
     Args:
-        fields (list): list of strings indicating fields to obfuscate
-        redaction (str): what the field will be obfuscated to
-        message (str): the log line to obfuscate
-        separator (str): the character separating the fields
+        fields (List[str]): List of fields to obfuscate.
+        redaction (str): String representing the redaction for the field.
+        message (str): Log line message.
+        separator (str): Character separating all fields in the log line.
+
+    Returns:
+        str: Log message with specified fields obfuscated.
     """
     for field in fields:
         message = re.sub(field+'=.*?'+separator,
@@ -29,8 +34,7 @@ def filter_datum(fields: List[str], redaction: str,
 
 
 class RedactingFormatter(logging.Formatter):
-    """ Redacting Formatter class
-        """
+    """Redacting Formatter class"""
 
     REDACTION = "***"
     FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
@@ -42,11 +46,13 @@ class RedactingFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """
-        redact the message of LogRecord instance
+        Redact the message of LogRecord instance.
+
         Args:
-        record (logging.LogRecord): LogRecord instance containing message
-        Return:
-            formatted string
+            record (logging.LogRecord): LogRecord instance containing message.
+
+        Returns:
+            str: Formatted and redacted log message.
         """
         message = super(RedactingFormatter, self).format(record)
         redacted = filter_datum(self.fields, self.REDACTION,
@@ -56,46 +62,55 @@ class RedactingFormatter(logging.Formatter):
 
 def get_logger() -> logging.Logger:
     """
-    Return a logging.Logger object
+    Create and configure a logger named "user_data".
+
+    Returns:
+        logging.Logger: Configured logger object.
     """
     logger = logging.getLogger("user_data")
     logger.setLevel(logging.INFO)
     logger.propagate = False
 
-    handler = logging.StreamHandler()
-
+    # Create StreamHandler with RedactingFormatter
+    stream_handler = logging.StreamHandler()
     formatter = RedactingFormatter(PII_FIELDS)
+    stream_handler.setFormatter(formatter)
 
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    logger.addHandler(stream_handler)
+
     return logger
 
 
 def get_db() -> mysql.connector.connection.MySQLConnection:
     """
+    Create a connection to the database.
+
+    Returns:
+        mysql.connector.connection.MySQLConnection: Database connection object.
     """
-    user = os.getenv('PERSONAL_DATA_DB_USERNAME') or "root"
-    passwd = os.getenv('PERSONAL_DATA_DB_PASSWORD') or ""
-    host = os.getenv('PERSONAL_DATA_DB_HOST') or "localhost"
+    db_user = os.getenv('PERSONAL_DATA_DB_USERNAME') or "root"
+    db_pwd = os.getenv('PERSONAL_DATA_DB_PASSWORD') or ""
+    db_host = os.getenv('PERSONAL_DATA_DB_HOST') or "localhost"
     db_name = os.getenv('PERSONAL_DATA_DB_NAME')
-    conn = mysql.connector.connect(user=user,
-                                   password=passwd,
-                                   host=host,
-                                   database=db_name)
-    return conn
+    connection = mysql.connector.connect(user=db_user,
+                                         password=db_pwd,
+                                         host=db_host,
+                                         database=db_name)
+    return connection
 
 
-def main():
+def main() -> None:
     """
-    main entry point
+    Retrieve all rows from the "users" table in the database
+    and log each row under a filtered format.
     """
-    db = get_db()
     logger = get_logger()
+    db = get_db()
     cursor = db.cursor()
     cursor.execute("SELECT * FROM users;")
     fields = cursor.column_names
     for row in cursor:
-        message = "".join("{}={}; ".format(k, v) for k, v in zip(fields, row))
+        message = "".join("{}={}; ".format(i, j) for i, j in zip(fields, row))
         logger.info(message.strip())
     cursor.close()
     db.close()
