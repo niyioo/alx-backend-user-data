@@ -35,7 +35,7 @@ class RedactingFormatter(logging.Formatter):
 
         Args:
             record (logging.LogRecord): LogRecord instance containing message.
-        
+
         Returns:
             str: Formatted and redacted log message.
         """
