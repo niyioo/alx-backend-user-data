@@ -45,7 +45,7 @@ class RedactingFormatter(logging.Formatter):
 
     FORMAT = "[HOLBERTON] user_data INFO %(asctime)-15s: %(message)s"
 
-    def __init__(self, fields: Tuple[str, ...]):
+    def __init__(self, fields: List[str]):
         """
         Initialize RedactingFormatter with fields to redact.
 
