@@ -24,8 +24,7 @@ class RedactingFormatter(logging.Formatter):
         Args:
             fields (List[str]): List of fields to redact.
         """
-        super().__init__(
-            "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s")
+        super().__init__("[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s")
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
@@ -40,8 +39,7 @@ class RedactingFormatter(logging.Formatter):
         """
         message = record.msg
         for field in self.fields:
-            message = re.sub(rf"{field}=([^;]+)",
-                             f"{field}={self.REDACTION}", message)
+            message = re.sub(rf"{field}=([^;]+)", f"{field}={self.REDACTION}", message)
         return message
 
 
