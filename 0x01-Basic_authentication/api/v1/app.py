@@ -23,6 +23,9 @@ elif getenv("AUTH_TYPE") == "basic_auth":
 
 @app.before_request
 def before_request():
+    """
+    Before request handler
+    """
     excluded = ['/api/v1/status/',
                 '/api/v1/unauthorized/', '/api/v1/forbidden/']
 
