@@ -24,8 +24,8 @@ elif getenv("AUTH_TYPE") == "basic_auth":
 @app.before_request
 def before_request():
     excluded = ['/api/v1/status/',
-                    '/api/v1/unauthorized/', '/api/v1/forbidden/']
-    
+                '/api/v1/unauthorized/', '/api/v1/forbidden/']
+
     if auth and auth.require_auth(request.path, excluded):
         if not auth.authorization_header(request):
             abort(401)
