@@ -31,11 +31,10 @@ class Auth:
         """Return authorization header"""
         if request is None:
             return None
-
-        if "Authorization" not in request.headers:
+        header = request.headers.get('Authorization')
+        if header is None:
             return None
-
-        return request.headers.get("Authorization")
+        return header
 
     def current_user(self, request=None) -> User:
         """Return current user"""
