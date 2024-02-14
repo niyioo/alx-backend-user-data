@@ -33,7 +33,7 @@ def before_request():
         if not auth.authorization_header(request):
             abort(401)
         request.current_user = auth.current_user(request)
-        if not auth.current_user(request):
+        if not request.current_user:
             abort(403)
 
 
