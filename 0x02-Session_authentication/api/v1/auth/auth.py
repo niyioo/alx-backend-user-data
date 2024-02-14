@@ -3,6 +3,7 @@
 Authentication class module
 """
 from flask import request
+from os import getenv
 from typing import List, TypeVar
 User = TypeVar('User')
 
