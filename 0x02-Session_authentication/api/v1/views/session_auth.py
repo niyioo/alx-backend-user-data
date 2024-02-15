@@ -6,6 +6,7 @@ from flask import jsonify, request, abort
 from api.v1.views import app_views
 from models.user import User
 from api.v1.app import auth
+from api.v1.auth.session_auth import SessionAuth
 
 
 @app_views.route('/auth_session/login', methods=['POST'], strict_slashes=False)
