@@ -27,6 +27,10 @@ def session_login():
     if not user[0].is_valid_password(password):
         return jsonify({"error": "wrong password"}), 401
 
+    # Ensure that auth object is an instance of SessionAuth
+    if not isinstance(auth, SessionAuth):
+        return jsonify({"error": "authentication mechanism not supported"}), 500
+
     session_id = auth.create_session(user[0].id)
     user_json = user[0].to_json()
     response = jsonify(user_json)
