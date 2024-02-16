@@ -13,18 +13,19 @@ class SessionDBAuth(SessionExpAuth):
     Session DB Authentication class
     """
 
-    def create_session(self, user_id=None) -> str:
+    def create_session(self, user_id=None):
         """
         Create a new session and store it in the database
         """
         session_id = super().create_session(user_id)
-        if type(session_id) == str:
-            kwargs = {
-                'user_id': user_id,
-                'session_id': session_id,
-            }
-            user_session = UserSession(**kwargs)
-            user_session.save()
+        if not session_id:
+            return None
+        kwargs = {
+            'user_id': user_id,
+            'session_id': session_id,
+        }
+        user_session = UserSession(**kwargs)
+        user_session.save()
 
         return session_id
 
@@ -32,24 +33,22 @@ class SessionDBAuth(SessionExpAuth):
         """
         Retrieves the user ID based on the session ID from the database
         """
-        try:
-            sessions = UserSession.search({'session_id': session_id})
-        except Exception:
-            return None
-        if len(sessions) <= 0:
-            return None
-        return sessions[0].user_id
+        user_id = UserSession.search({"session_id": session_id})
+        if user_id:
+            return user_id
+        return None
 
-    def destroy_session(self, request=None) -> bool:
+    def destroy_session(self, request=None):
         """
         Destroys the session based on the session ID from the request cookie
         """
+        if request is None:
+            return False
         session_id = self.session_cookie(request)
-        try:
-            sessions = UserSession.search({'session_id': session_id})
-        except Exception:
+        if not session_id:
             return False
-        if len(sessions) <= 0:
-            return False
-        sessions[0].remove()
-        return True
+        user_session = UserSession.search({"session_id": session_id})
+        if user_session:
+            user_session[0].remove()
+            return True
+        return False
