@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+"""Route module for the API.
 """
-Route module for the API
-"""
+import os
 from os import getenv
-from api.v1.views import app_views
 from flask import Flask, jsonify, abort, request
 from flask_cors import (CORS, cross_origin)
+
+from api.v1.views import app_views
 from api.v1.auth.auth import Auth
 from api.v1.auth.basic_auth import BasicAuth
 from api.v1.auth.session_auth import SessionAuth
@@ -30,10 +31,30 @@ if auth_type == 'session_db_auth':
     auth = SessionDBAuth()
 
 
+@app.errorhandler(404)
+def not_found(error) -> str:
+    """Not found handler.
+    """
+    return jsonify({"error": "Not found"}), 404
+
+
+@app.errorhandler(401)
+def unauthorized(error) -> str:
+    """Unauthorized handler.
+    """
+    return jsonify({"error": "Unauthorized"}), 401
+
+
+@app.errorhandler(403)
+def forbidden(error) -> str:
+    """Forbidden handler.
+    """
+    return jsonify({"error": "Forbidden"}), 403
+
+
 @app.before_request
 def authenticate_user():
-    """
-    Before request handler
+    """Authenticates a user before processing a request.
     """
     if auth:
         excluded_paths = [
@@ -50,24 +71,6 @@ def authenticate_user():
             if user is None:
                 abort(403)
             request.current_user = user
-
-
-@app.errorhandler(404)
-def not_found(error) -> str:
-    """ Not found handler """
-    return jsonify({"error": "Not found"}), 404
-
-
-@app.errorhandler(401)
-def unauthorized(error):
-    """ Unauthorized error handler """
-    return jsonify({"error": "Unauthorized"}), 401
-
-
-@app.errorhandler(403)
-def forbidden(error):
-    """ Forbidden error handler """
-    return jsonify({"error": "Forbidden"}), 403
 
 
 if __name__ == "__main__":
