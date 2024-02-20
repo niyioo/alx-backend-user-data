@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """
-DB module containing the DB class for database operations.
+DB module
 """
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.session import Session
 from sqlalchemy.exc import IntegrityError
-from user import User
+from sqlalchemy.exc import NoResultFound, InvalidRequestError
+from user import User, Base
+
 
 class DB:
     """DB class
@@ -38,3 +44,15 @@ class DB:
             # Handle the case when a user with the same email already exists
             self._session.rollback()
             raise ValueError("User with this email already exists")
+
+    def find_user_by(self, **kwargs) -> User:
+        """Find a user by given criteria
+        """
+        try:
+            user = self._session.query(User).filter_by(**kwargs).first()
+            if user is None:
+                raise NoResultFound("No user found")
+            return user
+        except InvalidRequestError:
+            # Handle the case of an invalid query
+            raise InvalidRequestError("Invalid query arguments")
