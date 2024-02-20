@@ -13,18 +13,19 @@ class SessionDBAuth(SessionExpAuth):
     Session DB Authentication class
     """
 
-    def create_session(self, user_id=None) -> str:
+    def create_session(self, user_id=None):
         """
         Create a new session and store it in the database
         """
         session_id = super().create_session(user_id)
-        if type(session_id) == str:
-            kwargs = {
-                'user_id': user_id,
-                'session_id': session_id,
-            }
-            user_session = UserSession(**kwargs)
-            user_session.save()
+        if not session_id:
+            return None
+        kwargs = {
+            'user_id': user_id,
+            'session_id': session_id,
+        }
+        user_session = UserSession(**kwargs)
+        user_session.save()
 
         return session_id
 
