@@ -53,6 +53,24 @@ class DB:
             if user is None:
                 raise NoResultFound("No user found")
             return user
-        except InvalidRequestError:
+        except NoResultFound as e:
+            # Handle the case when no user is found
+            raise e
+        except InvalidRequestError as e:
             # Handle the case of an invalid query
-            raise InvalidRequestError("Invalid query arguments")
+            raise InvalidRequestError("Invalid query arguments") from e
+
+    def update_user(self, user_id: int, **kwargs) -> None:
+        """Update user attributes
+        """
+        try:
+            user = self.find_user_by(id=user_id)
+            for key, value in kwargs.items():
+                # Check if the key exists as an attribute in the User model
+                if hasattr(User, key):
+                    setattr(user, key, value)
+                else:
+                    raise ValueError(f"Invalid attribute: {key}")
+            self._session.commit()
+        except NoResultFound:
+            raise ValueError(f"No user found with id: {user_id}")
