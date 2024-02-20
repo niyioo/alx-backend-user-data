@@ -2,12 +2,10 @@
 """
 DB module
 """
-from typing import Optional
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, tuple_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import NoResultFound, InvalidRequestError
 from user import User, Base
 
@@ -36,59 +34,47 @@ class DB:
     def add_user(self, email: str, hashed_password: str) -> User:
         """Add a new user to the database
         """
-        user = User(email=email, hashed_password=hashed_password)
         try:
+            user = User(email=email, hashed_password=hashed_password)
             self._session.add(user)
             self._session.commit()
-            return user
-        except IntegrityError:
+        except Exception:
             # Handle the case when a user with the same email already exists
             self._session.rollback()
-            raise ValueError("User with this email already exists")
+            user = None
+        return user
 
     def find_user_by(self, **kwargs) -> User:
         """Find a user by given criteria
         """
-        try:
-            user = self._session.query(User).filter_by(**kwargs).first()
-            if user is None:
-                raise NoResultFound("No user found")
-            return user
-        except NoResultFound as e:
-            # Handle the case when no user is found
-            raise e
-        except InvalidRequestError as e:
-            # Handle the case of an invalid query
-            raise InvalidRequestError("Invalid query arguments") from e
+        filter_fields, filter_values = [], []
+        for key, value in kwargs.items():
+            if hasattr(User, key):
+                filter_fields.append(getattr(User, key))
+                filter_values.append(value)
+            else:
+                raise InvalidRequestError()
+        result = self._session.query(User).filter(
+            tuple_(*filter_fields).in_([tuple(filter_values)])
+        ).first()
+        if result is None:
+            raise NoResultFound()
+        return result
 
     def update_user(self, user_id: int, **kwargs) -> None:
         """Update user attributes
         """
-        try:
-            user = self.find_user_by(id=user_id)
-            for key, value in kwargs.items():
-                # Check if the key exists as an attribute in the User model
-                if hasattr(User, key):
-                    setattr(user, key, value)
-                else:
-                    raise ValueError(f"Invalid attribute: {key}")
-            self._session.commit()
-        except NoResultFound:
-            raise ValueError(f"No user found with id: {user_id}")
-
-    def find_user_by_session_id(self, session_id: str) -> Optional[User]:
-        """Find a user by session ID.
-
-        Args:
-            session_id: A string representing the session ID.
-
-        Returns:
-            User: The user corresponding
-            to the session ID if found, None otherwise.
-        """
-        try:
-            return (self._session.query(User)
-                    .filter(User.session_id == session_id)
-                    .one())
-        except NoResultFound:
-            return None
+        user = self.find_user_by(id=user_id)
+        if user is None:
+            return
+        update_values = {}
+        for key, value in kwargs.items():
+            if hasattr(User, key):
+                update_values[getattr(User, key)] = value
+            else:
+                raise ValueError()
+        self._session.query(User).filter(User.id == user_id).update(
+            update_values,
+            synchronize_session=False,
+        )
+        self._session.commit()
