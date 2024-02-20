@@ -4,7 +4,7 @@
 Authentication Module
 """
 import bcrypt
-import uuid
+from uuid import uuid4
 from typing import Union
 from db import DB
 from user import User
@@ -21,7 +21,7 @@ def _hash_password(password: str) -> bytes:
 
 def _generate_uuid() -> str:
     """Generate a new UUID."""
-    return str(uuid.uuid4())
+    return str(uuid4())
 
 
 class Auth:
