@@ -2,6 +2,7 @@
 """
 DB module
 """
+from typing import Optional
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -74,3 +75,17 @@ class DB:
             self._session.commit()
         except NoResultFound:
             raise ValueError(f"No user found with id: {user_id}")
+
+    def find_user_by_session_id(self, session_id: str) -> Optional[User]:
+        """Find a user by session ID.
+
+        Args:
+            session_id: A string representing the session ID.
+
+        Returns:
+            User: The user corresponding to the session ID if found, None otherwise.
+        """
+        try:
+            return self._session.query(User).filter(User.session_id == session_id).one()
+        except NoResultFound:
+            return None
