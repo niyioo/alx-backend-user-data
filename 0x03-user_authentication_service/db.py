@@ -83,9 +83,12 @@ class DB:
             session_id: A string representing the session ID.
 
         Returns:
-            User: The user corresponding to the session ID if found, None otherwise.
+            User: The user corresponding
+            to the session ID if found, None otherwise.
         """
         try:
-            return self._session.query(User).filter(User.session_id == session_id).one()
+            return (self._session.query(User)
+                    .filter(User.session_id == session_id)
+                    .one())
         except NoResultFound:
             return None

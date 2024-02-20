@@ -128,14 +128,15 @@ class Auth:
             pass
 
     def get_reset_password_token(self, email: str) -> str:
-        """Generate a reset password token for the user with the provided email.
+        """Generate a reset password token for the
+        user with the provided email.
 
         Args:
             email: A string representing the user's email address.
 
         Returns:
             str: The generated reset password token.
-        
+
         Raises:
             ValueError: If no user exists with the provided email.
         """
