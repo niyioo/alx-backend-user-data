@@ -2,7 +2,7 @@
 """
 Flask App Module
 """
-from flask import Flask, jsonify, request, make_response, abort
+from flask import Flask, jsonify, request, redirect, abort
 from auth import Auth
 
 
@@ -10,7 +10,7 @@ app = Flask(__name__)
 AUTH = Auth()
 
 
-@app.route("/")
+@app.route("/", methods=["GET"], strict_slashes=False)
 def index():
     """Index route"""
     return jsonify({"message": "Bienvenue"})
