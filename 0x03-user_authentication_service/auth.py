@@ -3,10 +3,10 @@
 """
 Authentication Module
 """
-
+import bcrypt
+import uuid
 from db import DB
 from user import User
-import bcrypt
 from sqlalchemy.exc import NoResultFound
 
 
@@ -51,3 +51,53 @@ class Auth:
         salt = bcrypt.gensalt()
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
         return hashed_password
+
+    def valid_login(self, email: str, password: str) -> bool:
+        """Validate user credentials.
+
+        Args:
+            email: A string representing the user's email address.
+            password: A string representing the user's password.
+
+        Returns:
+            bool: True if the credentials are valid, False otherwise.
+        """
+        try:
+            user = self._db.find_user_by(email=email)
+            hashed_password = user.hashed_password
+            # Check if the provided password matches the hashed password
+            if bcrypt.checkpw(password.encode('utf-8'), hashed_password):
+                return True
+            else:
+                return False
+        except NoResultFound:
+            return False
+
+    def _generate_uuid(self) -> str:
+        """Generate a new UUID."""
+        return str(uuid.uuid4())
+
+    def create_session(self, email: str) -> str:
+        """Create a session for the user with the given email."""
+        # Find the user by email
+        try:
+            user = self._db.find_user_by(email=email)
+        except NoResultFound:
+            return None
+
+        # Generate a new UUID for the session ID
+        session_id = str(uuid.uuid4())
+
+        # Update the user's session ID in the database
+        self._db.update_user(user.id, session_id=session_id)
+
+        return session_id
+
+
+if __name__ == "__main__":
+    auth = Auth()
+    email = 'bob@bob.com'
+    password = 'MyPwdOfBob'
+    auth.register_user(email, password)
+    print(auth.create_session(email))
+    print(auth.create_session("unknown@email.com"))
